@@ -103,125 +103,7 @@ java -version
 javac -version
 ```
 
-## 6. Install Maven
-
-### For Ubuntu/Debian:
-```bash
-sudo apt update
-sudo apt install maven
-```
-
-### For CentOS/RHEL/Fedora:
-```bash
-sudo yum install maven  # CentOS/RHEL
-sudo dnf install maven  # Fedora
-```
-
-### Manual Installation (Recommended for specific versions):
-```bash
-# Download Maven (choose version from https://maven.apache.org/download.cgi)
-cd /opt
-sudo wget https://downloads.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
-
-# Extract
-sudo tar -xvzf apache-maven-3.9.6-bin.tar.gz
-
-# Rename directory (optional)
-sudo mv apache-maven-3.9.6 maven
-```
-
-## 7. Set Maven Environment Variables
-
-### Edit ~/.bashrc or ~/.bash_profile:
-```bash
-nano ~/.bashrc
-
-# Add these lines:
-export MAVEN_HOME=/opt/maven
-export PATH=$MAVEN_HOME/bin:$PATH
-
-# Save and reload
-source ~/.bashrc
-```
-
-### For system-wide setup:
-```bash
-sudo nano /etc/profile.d/maven.sh
-
-# Add:
-export MAVEN_HOME=/opt/maven
-export PATH=$MAVEN_HOME/bin:$PATH
-
-sudo chmod +x /etc/profile.d/maven.sh
-source /etc/profile.d/maven.sh
-```
-
-## 8. Verify Maven Setup
-
-```bash
-# Check Maven version
-mvn -version
-
-# Should show both Java and Maven info
-```
-
-## 9. Complete Example Configuration File (~/.bashrc)
-
-```bash
-# Java Configuration
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-export JRE_HOME=$JAVA_HOME/jre
-export PATH=$JAVA_HOME/bin:$PATH
-
-# Maven Configuration
-export MAVEN_HOME=/opt/maven
-export PATH=$MAVEN_HOME/bin:$PATH
-
-# Optional: Maven performance settings
-export MAVEN_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=512m"
-```
-
-## 10. Troubleshooting Common Issues
-
-### Issue: "java: command not found"
-```bash
-# Solution: Verify paths and reload
-echo $PATH
-ls -la $JAVA_HOME/bin/java
-source ~/.bashrc
-```
-
-### Issue: Maven cannot find Java
-```bash
-# Check if JAVA_HOME is set correctly
-echo $JAVA_HOME
-
-# Update alternatives
-sudo update-alternatives --config java
-```
-
-### Issue: Permission denied
-```bash
-# Check permissions
-ls -la /usr/lib/jvm/
-
-# Fix permissions if needed
-sudo chmod -R 755 /usr/lib/jvm/java-11-openjdk-amd64
-```
-
-## 11. Switch Between Multiple Java Versions
-
-```bash
-# List available Java versions
-sudo update-alternatives --config java
-
-# Set default Java version
-sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-```
-
-## 12. Quick Setup Script
-
-Create a setup script `setup_java_maven.sh`:
+## 6. Install JAVA And Maven
 
 ```bash
 #!/bin/bash
@@ -229,59 +111,67 @@ Create a setup script `setup_java_maven.sh`:
 # Update system
 sudo apt update
 
-# Install Java
-sudo apt install openjdk-11-jdk -y
+# Install prerequisites
+sudo apt install -y wget tar
 
-# Set Java environment
-echo "export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> ~/.bashrc
+# =========================
+# Install OpenJDK 17
+# =========================
+JAVA_VERSION="17"
+sudo apt install -y openjdk-${JAVA_VERSION}-jdk
+
+# Set JAVA_HOME environment variable in ~/.bashrc
+echo "export JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64" >> ~/.bashrc
 echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> ~/.bashrc
 
-# Install Maven
-sudo apt install maven -y
+# =========================
+# Download and install Maven manually
+# =========================
+MAVEN_VERSION="3.9.14"
+MAVEN_TAR="apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+MAVEN_URL="https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_TAR}"
 
-# Alternative: Manual Maven install
-# cd /opt
-# sudo wget https://downloads.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
-# sudo tar -xvzf apache-maven-3.9.6-bin.tar.gz
-# sudo mv apache-maven-3.9.6 maven
-# echo "export MAVEN_HOME=/opt/maven" >> ~/.bashrc
-# echo "export PATH=\$MAVEN_HOME/bin:\$PATH" >> ~/.bashrc
+# Download Maven tarball
+wget -O /tmp/${MAVEN_TAR} ${MAVEN_URL}
 
-# Reload bashrc
+# Check if download succeeded
+if [ $? -ne 0 ]; then
+  echo "Failed to download Maven. Please check the URL."
+  exit 1
+fi
+
+# Extract to /opt
+sudo tar -xvzf /tmp/${MAVEN_TAR} -C /opt
+
+# Remove existing symlink if it exists
+if [ -L /opt/maven ]; then
+  sudo rm /opt/maven
+fi
+
+# Create a new symlink
+sudo ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven
+
+# Set MAVEN_HOME environment variable in ~/.bashrc
+echo "export MAVEN_HOME=/opt/maven" >> ~/.bashrc
+echo "export PATH=\$MAVEN_HOME/bin:\$PATH" >> ~/.bashrc
+
+# Cleanup
+rm /tmp/${MAVEN_TAR}
+
+# =========================
+# Reload environment variables in current shell
+# =========================
 source ~/.bashrc
 
-# Verify installation
+# =========================
+# Verify installations
+# =========================
 echo "Java Version:"
 java -version
+
 echo -e "\nMaven Version:"
 mvn -version
+
+echo "Please run 'source ~/.bashrc' or restart your terminal to use Maven."
+
 ```
-
-Make it executable:
-```bash
-chmod +x setup_java_maven.sh
-./setup_java_maven.sh
-```
-
-## 13. Important Notes
-
-1. **Path Priority**: The order in PATH matters. `$JAVA_HOME/bin:$PATH` places Java first
-2. **Reload Required**: Always run `source ~/.bashrc` after making changes
-3. **Check Installations**: Verify both Java and Maven are installed correctly
-4. **Version Compatibility**: Ensure Maven version is compatible with your Java version
-5. **System Reboot**: For system-wide changes, a reboot may be necessary
-
-## 14. Testing Your Setup
-
-Create a simple Maven project to test:
-```bash
-mvn archetype:generate -DgroupId=com.example -DartifactId=my-app \
--DarchetypeArtifactId=maven-archetype-quickstart \
--DinteractiveMode=false
-
-cd my-app
-mvn clean compile
-mvn package
-```
-
-This completes the Java and Maven setup on Linux. The configuration will persist across reboots and terminal sessions.
